@@ -30,7 +30,6 @@ def create_all_masks(imdir):
 
     #New directory of masks
     mask_directory = os.path.abspath(os.path.join(imdir, '../masks/'))
-    print(mask_directory)
 
     for image_path in IMAGE_PATHS:
         class_name = image_path.split('/')[-2]
@@ -56,10 +55,6 @@ def create_mask(image_path, result_path, class_num, iteration):
     Returns:
     path to new image
     """
-
-    print('Creating Mask from: {}'.format(image_path))
-    print('iteration: {}'.format(iteration))
-
     image_name = image_path.split('/')[-1]
 
     original_image = Image.open(image_path)
@@ -106,7 +101,6 @@ def splice_img(realimg, fakeimgs, imgmasks):
     Path to directory of spliced images and path to directory of spliced mask
     """
 
-    print('Splicing images from: {} and {}'.format(realimg, fakeimgs[0]))
     image_name = realimg.split('/')[-1]
     name = image_name.split('.')[0]
 
@@ -186,6 +180,7 @@ def splice_all(imdir):
     mask_image_path = imdir + 'masks'
     NUMBER_OF_FAKE_IMAGES = 2
 
+    print('Splicing Images')
     for real_image in tqdm.tqdm(REAL_IMAGE_PATHS):
 
         #Keeps track of number of synthetic flags in real image
@@ -201,6 +196,7 @@ def splice_all(imdir):
         mask_images = []
         
         #Creates random sample of masks (new images) from corresponding flag sample
+        print('Creating Masks')
         for fake_image in tqdm.tqdm(fake_images):
 
             imgname = fake_image.split('/')[-1]
@@ -229,14 +225,11 @@ def splice_all(imdir):
 
             mask_images.append(create_mask(fake_image, mask_image_path, class_num, count)) 
         
-        print(fake_images)
-        print(mask_images)
         splice_img(real_image, fake_images, mask_images)
 
 def main():
     path = 'data/'
 
-    #create_all_masks(path + 'flag_imgs/')
     splice_all(path)
 
 

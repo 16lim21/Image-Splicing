@@ -10,3 +10,5 @@ The result will be created in the data folder with 3 new subdirectories:
         3. splice_masks: Masks for the corresponding spliced real image
 
 To change this, change image and directory paths in the code.
+
+In line 132: change maximum and minimum scaling numbers to preference
