@@ -41,10 +41,10 @@ def create_all_masks(imdir):
 def create_mask(image_path, result_path, class_num, iteration):
     """
     Creates mask of a single image and places it in a separate masks directory.
-    Notes: Could not create a 2 channel image unless in the format of JPEG 2000, so created a PNG image
-    with 4 channels where I only modified the first 2 channels:
-        Class_number is in the first channel
-        Object iteration is in the second channel
+    Notes: Could not create a 2 channel image unless in the format of JPEG 2000, so created 2 PNG images
+    with 1 channel:
+        1. Class_number
+        2. Object iteration
     
     Args:
     image_path: path to image with transparent background
@@ -53,36 +53,37 @@ def create_mask(image_path, result_path, class_num, iteration):
     iteration: iteration number of this specific instance
 
     Returns:
-    path to new image
+    list to both image paths
     """
     image_name = image_path.split('/')[-1]
+    name = image_name.split('.')[0]
 
     original_image = Image.open(image_path)
-    image = original_image.convert('RGBA')
+    path = []
 
-    pixel_data = numpy.array(image)
+    for num, mask_type in zip((class_num, iteration), ('class', 'iteration')):
+        image = original_image.copy().convert('L')
+        pixel_data = numpy.array(image)
 
-    #If image has alpha channel for transparency.
-    #If it does, convert transparent pixels to black and fully transparent
-    #And convert non-transparent pixels to white and fully opaque
-    if image.mode == 'RGBA':
-        for y in range(pixel_data.shape[0]):
-            for x in range(pixel_data.shape[1]):
-                if pixel_data[y][x][3] == 0:
-                    pixel_data[y][x] = [0, 0, 0, 0]
-                else:
-                    pixel_data[y][x] = [class_num, iteration, 0, 255]
+        #If image has been converted into black and white, then modify pixels
+        if image.mode == 'L':
+            for y in range(pixel_data.shape[0]):
+                for x in range(pixel_data.shape[1]):
+                    if pixel_data[y][x] != 0:
+                        pixel_data[y][x] = num * 50 #multiplied by 50 for better visualization
 
-    try:
-        os.stat(result_path)
+        try:
+            os.stat(result_path)
+        
+        except:
+            os.makedirs(result_path)
+
+        mask = Image.fromarray(pixel_data)
+        impath = result_path + '/{}_{}.png'.format(name, mask_type)
+
+        mask.save(impath, format='PNG', transparency=0)
+        path.append(impath)
     
-    except:
-        os.makedirs(result_path)
-
-    mask = Image.fromarray(pixel_data)
-    path = result_path + '/{}'.format(image_name)
-    mask.save(path)
-
     return path
 
 def splice_img(realimg, fakeimgs, imgmasks):
@@ -113,14 +114,13 @@ def splice_img(realimg, fakeimgs, imgmasks):
     rwidth, rheight = real_image.size
 
     #Create new mask image
-    new_mask = Image.new('RGBA', (rwidth, rheight), (0, 0, 0, 0))
+    new_class_mask = Image.new('L', (rwidth, rheight), 0)
+    new_it_mask = Image.new('L', (rwidth, rheight), 0)
 
     #For loop will iterate through both lists in parallel 
     for fakeimg, imgmask in zip(fakeimgs, imgmasks):
         #Splice synthetic images into a real image
         fake_image = Image.open(fakeimg)
-        fake_image.convert('RGBA')
-
         fwidth, fheight = fake_image.size
 
         #Create numbers to randomly translate, rotate, and scale fake_image without 
@@ -138,12 +138,17 @@ def splice_img(realimg, fakeimgs, imgmasks):
         rot_image = fake_image.rotate(random_theta).resize((int(fwidth * random_scale), int(fheight * random_scale)))
         real_image.paste(rot_image, (randomx, randomy), rot_image)
 
-        #Create mask image with same translation, rotation, scaling as spliced image
-        mask_image = Image.open(imgmask)
-        mask_image.convert('RGBA')
+        #Create mask image with same translation, rotation, scaling as spliced image for class type
+        class_mask = Image.open(imgmask[0])
         
-        rotated_mask = mask_image.rotate(random_theta).resize((int(fwidth * random_scale), int(fheight * random_scale)))
-        new_mask.paste(rotated_mask, (randomx, randomy), rot_image)
+        rotated_class_mask = class_mask.rotate(random_theta).resize((int(fwidth * random_scale), int(fheight * random_scale)))
+        new_class_mask.paste(rotated_class_mask, (randomx, randomy), rot_image)
+
+        #Create mask image with same translation, rotation, scaling as spliced image for iteration number
+        it_mask = Image.open(imgmask[1])
+        
+        rotated_it_mask = it_mask.rotate(random_theta).resize((int(fwidth * random_scale), int(fheight * random_scale)))
+        new_it_mask.paste(rotated_it_mask, (randomx, randomy), rot_image)
         
     try:
         os.stat(image_directory + '/spliced_imgs/')
@@ -151,7 +156,7 @@ def splice_img(realimg, fakeimgs, imgmasks):
     except:
         os.makedirs(image_directory + '/spliced_imgs/')
 
-    real_image.save(image_directory + '/spliced_imgs/{}'.format(image_name))
+    real_image.save(image_directory + '/spliced_imgs/{}.png'.format(name), format='PNG')
 
     try:
         os.stat(image_directory + '/spliced_masks/')
@@ -159,7 +164,8 @@ def splice_img(realimg, fakeimgs, imgmasks):
     except:
         os.makedirs(image_directory + '/spliced_masks/')
 
-    new_mask.save(image_directory + '/spliced_masks/{}.png'.format(name))
+    new_class_mask.save(image_directory + '/spliced_masks/{}_class.png'.format(name), format='PNG', transparency=0)
+    new_it_mask.save(image_directory + '/spliced_masks/{}_iteration.png'.format(name), format='PNG', transparency=0)
 
 def splice_all(imdir):
     """
