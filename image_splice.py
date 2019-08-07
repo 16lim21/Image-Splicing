@@ -70,7 +70,7 @@ def create_mask(image_path, result_path, class_num, iteration):
             for y in range(pixel_data.shape[0]):
                 for x in range(pixel_data.shape[1]):
                     if pixel_data[y][x] != 0:
-                        pixel_data[y][x] = num * 50 #multiplied by 50 for better visualization
+                        pixel_data[y][x] = num #multiply by a large number for better visualization
 
         try:
             os.stat(result_path)
@@ -170,8 +170,6 @@ def splice_img(realimg, fakeimgs, imgmasks):
 def splice_all(imdir):
     """
     Run splice_img on all images. 
-    Will edit this later to allow splice_all to splice a random list of fake_images into the
-    real image and do the same for the corresponding masks. 
 
     Args:
     imdir: directory containing all images (real, synthetic, masks, spliced images)
@@ -190,6 +188,7 @@ def splice_all(imdir):
     for real_image in tqdm.tqdm(REAL_IMAGE_PATHS):
 
         #Keeps track of number of synthetic flags in real image
+        #Need to generalize this. Could maybe use a dictionary
         AN_COUNT = 0
         IIIP_COUNT = 0
         IC_COUNT = 0
