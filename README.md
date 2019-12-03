@@ -1,3 +1,5 @@
+This code was written for a research project at Columbia University's DVMM Lab in conjunction with Columbia University's School of Journalism. The end goal is to create an app that would aid journalists in detecting the symbols identifying different alt-right and political groups using machine learning. This code was specifically used to splice synthetic images of symbols into real photos (randomly) to train the machine learning modeles due to the lack of royalty free real images of these symbols. The photos included in this repository deepict possibly offensive images. 
+
 To run code, go to image_splicing directory and run: python image_splice.py
 
 For images to be spliced, have a directory containing 2 subdirectories:
